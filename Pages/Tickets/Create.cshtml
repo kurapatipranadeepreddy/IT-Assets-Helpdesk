@@ -1,0 +1,54 @@
+@page
+@model ITAssetHelpdesk.Pages.Tickets.CreateModel
+@{ ViewData["Title"] = "New Ticket"; }
+<div class="page-header">
+    <h2><i class="bi bi-plus-circle me-2"></i>New Ticket</h2>
+    <a asp-page="./Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+<div class="form-card" style="max-width:760px;">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none"></div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label fw-600">Title *</label>
+                <input asp-for="Ticket.Title" class="form-control" placeholder="Brief description of the issue" required/>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-600">Priority *</label>
+                <select asp-for="Ticket.Priority" class="form-select">
+                    @foreach (var p in ITAssetHelpdesk.Models.Ticket.Priorities)
+                    {
+                        if (p == "Medium") { <option value="@p" selected>@p</option> }
+                        else { <option value="@p">@p</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-600">Category *</label>
+                <select asp-for="Ticket.Category" class="form-select">
+                    @foreach (var c in ITAssetHelpdesk.Models.Ticket.Categories)
+                    { <option value="@c">@c</option> }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-600">Status</label>
+                <select asp-for="Ticket.Status" class="form-select">
+                    @foreach (var s in ITAssetHelpdesk.Models.Ticket.Statuses)
+                    {
+                        if (s == "Open") { <option value="@s" selected>@s</option> }
+                        else { <option value="@s">@s</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-600">Description *</label>
+                <textarea asp-for="Ticket.Description" class="form-control" rows="5"
+                          placeholder="Describe the issue in detail..." required></textarea>
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Create Ticket</button>
+            <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

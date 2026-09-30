@@ -1,0 +1,135 @@
+@page
+@model ITAssetHelpdesk.Pages.Reports.IndexModel
+@{ ViewData["Title"] = "Reports"; }
+
+<div class="page-header">
+    <h2><i class="bi bi-bar-chart-line me-2"></i>Reports</h2>
+    <button class="btn btn-outline-success" onclick="exportTable()"><i class="bi bi-download me-1"></i>Export CSV</button>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link @(Model.Tab=="assets"?"active":"")" href="?Tab=assets"><i class="bi bi-box-seam me-1"></i>Asset Report</a></li>
+    <li class="nav-item"><a class="nav-link @(Model.Tab=="tickets"?"active":"")" href="?Tab=tickets"><i class="bi bi-ticket-perforated me-1"></i>Ticket Report</a></li>
+    <li class="nav-item"><a class="nav-link @(Model.Tab=="employees"?"active":"")" href="?Tab=employees"><i class="bi bi-people me-1"></i>Employee Assets</a></li>
+</ul>
+
+@if (Model.Tab == "assets")
+{
+    <div class="table-card">
+        <div class="table-toolbar">
+            <form method="get" class="d-flex gap-2 flex-wrap align-items-center w-100">
+                <input type="hidden" name="Tab" value="assets"/>
+                <select name="AStatus" class="form-select" style="width:150px;">
+                    <option value="">All Statuses</option>
+                    @foreach (var s in ITAssetHelpdesk.Models.Asset.Statuses)
+                    {
+                        if (Model.AStatus == s) { <option value="@s" selected>@s</option> }
+                        else { <option value="@s">@s</option> }
+                    }
+                </select>
+                <select name="ACat" class="form-select" style="width:180px;">
+                    <option value="">All Categories</option>
+                    @foreach (var c in ITAssetHelpdesk.Models.Asset.Categories)
+                    {
+                        if (Model.ACat == c) { <option value="@c" selected>@c</option> }
+                        else { <option value="@c">@c</option> }
+                    }
+                </select>
+                <button type="submit" class="btn btn-outline-primary btn-sm">Generate</button>
+                <span class="ms-auto text-muted-sm">@Model.Assets.Count assets</span>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="styled" id="exportTable">
+                <thead><tr><th>Tag</th><th>Name</th><th>Category</th><th>Brand</th><th>Status</th><th>Assigned To</th><th>Location</th><th>Warranty</th><th>Cost</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Assets)
+                    {
+                        <tr><td>@a.AssetTag</td><td>@a.Name</td><td>@a.Category</td><td>@a.Brand</td>
+                        <td>@a.Status</td><td>@(a.Employee?.FullName ?? "—")</td><td>@a.Location</td>
+                        <td>@(a.WarrantyExpiryDate?.ToString("MMM dd, yyyy") ?? "N/A")</td>
+                        <td>@(a.Cost > 0 ? "$"+a.Cost.ToString("N2") : "—")</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (Model.Tab == "tickets")
+{
+    <div class="table-card">
+        <div class="table-toolbar">
+            <form method="get" class="d-flex gap-2 flex-wrap align-items-center w-100">
+                <input type="hidden" name="Tab" value="tickets"/>
+                <select name="TStatus" class="form-select" style="width:160px;">
+                    <option value="">All Statuses</option>
+                    @foreach (var s in ITAssetHelpdesk.Models.Ticket.Statuses)
+                    {
+                        if (Model.TStatus == s) { <option value="@s" selected>@s</option> }
+                        else { <option value="@s">@s</option> }
+                    }
+                </select>
+                <select name="TPrio" class="form-select" style="width:140px;">
+                    <option value="">All Priorities</option>
+                    @foreach (var p in ITAssetHelpdesk.Models.Ticket.Priorities)
+                    {
+                        if (Model.TPrio == p) { <option value="@p" selected>@p</option> }
+                        else { <option value="@p">@p</option> }
+                    }
+                </select>
+                <button type="submit" class="btn btn-outline-primary btn-sm">Generate</button>
+                <span class="ms-auto text-muted-sm">@Model.Tickets.Count tickets</span>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="styled" id="exportTable">
+                <thead><tr><th>Ticket #</th><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>Technician</th><th>Created</th><th>Resolved</th></tr></thead>
+                <tbody>
+                    @foreach (var t in Model.Tickets)
+                    {
+                        <tr><td>@t.TicketNumber</td><td>@t.Title</td><td>@t.Category</td><td>@t.Priority</td>
+                        <td>@t.Status</td><td>@(t.AssignedTechnician?.FullName ?? "Unassigned")</td>
+                        <td>@t.CreatedDate.ToString("MMM dd, yyyy")</td>
+                        <td>@(t.ResolvedDate?.ToString("MMM dd, yyyy") ?? "—")</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-card">
+        <div class="table-toolbar">
+            <span class="text-muted-sm">Employees with hardware assignments</span>
+            <span class="ms-auto text-muted-sm">@Model.Employees.Count employees</span>
+        </div>
+        <div class="table-responsive">
+            <table class="styled" id="exportTable">
+                <thead><tr><th>Code</th><th>Employee</th><th>Department</th><th>Status</th><th>Asset Count</th><th>Assigned Assets</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.Employees)
+                    {
+                        <tr><td>@e.EmployeeCode</td><td>@e.FullName</td><td>@e.Department</td>
+                        <td>@(e.IsActive?"Active":"Inactive")</td><td>@e.Assets.Count</td>
+                        <td>@string.Join(", ", e.Assets.Select(a => a.AssetTag + " - " + a.Name))</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+function exportTable() {
+    var table = document.getElementById("exportTable");
+    if (!table) return;
+    var rows = Array.from(table.querySelectorAll("tr"));
+    var csv = rows.map(r => Array.from(r.querySelectorAll("th,td")).map(c => '"'+c.textContent.trim().replace(/"/g,'""')+'"').join(",")).join("\n");
+    var blob = new Blob([csv], {type:"text/csv"});
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "report_@(Model.Tab)_" + new Date().toISOString().slice(0,10) + ".csv"; a.click();
+}
+</script>
+}

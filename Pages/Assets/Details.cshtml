@@ -1,0 +1,135 @@
+@page "{id:int}"
+@model ITAssetHelpdesk.Pages.Assets.DetailsModel
+@{
+    var a = Model.Asset;
+    var isAdmin = HttpContext.Session.GetString("UserRole") == "Administrator";
+    ViewData["Title"] = a.AssetTag;
+    var sc2 = a.Status switch { "Available"=>"badge-available","Assigned"=>"badge-assigned","Under Repair"=>"badge-repair","Retired"=>"badge-retired",_=>"" };
+}
+
+<div class="page-header">
+    <h2><i class="bi bi-box-seam me-2"></i>Asset Details</h2>
+    <div class="d-flex gap-2">
+        @if (isAdmin) { <a asp-page="./Edit" asp-route-id="@a.Id" class="btn btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a> }
+        <a asp-page="./Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="detail-header d-flex align-items-center gap-4 flex-wrap">
+        <div>
+            <h3 style="color:#f1f5f9;margin:0;font-size:22px;">@a.AssetTag</h3>
+            <p style="color:#94a3b8;margin:4px 0 0;">@a.Name</p>
+        </div>
+        <div class="d-flex gap-2 ms-auto flex-wrap">
+            <span class="badge-status @sc2" style="font-size:13px;padding:5px 14px;">@a.Status</span>
+            @if (a.IsWarrantyExpiringSoon) {
+                <span class="badge bg-warning text-dark" style="font-size:13px;padding:5px 14px;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Warranty Expiring</span>
+            }
+            @if (a.IsWarrantyExpired) {
+                <span class="badge bg-danger" style="font-size:13px;padding:5px 14px;"><i class="bi bi-shield-x me-1"></i>Warranty Expired</span>
+            }
+        </div>
+    </div>
+    <div class="p-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value">@a.Category</span></div>
+                <div class="detail-row"><span class="detail-label">Brand</span><span class="detail-value">@(string.IsNullOrEmpty(a.Brand)?"—":a.Brand)</span></div>
+                <div class="detail-row"><span class="detail-label">Model</span><span class="detail-value">@(string.IsNullOrEmpty(a.Model)?"—":a.Model)</span></div>
+                <div class="detail-row"><span class="detail-label">Serial Number</span><span class="detail-value fw-600">@(string.IsNullOrEmpty(a.SerialNumber)?"—":a.SerialNumber)</span></div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-row"><span class="detail-label">Purchase Date</span><span class="detail-value">@a.PurchaseDate.ToString("MMMM dd, yyyy")</span></div>
+                <div class="detail-row"><span class="detail-label">Warranty Expiry</span>
+                    <span class="detail-value @(a.IsWarrantyExpiringSoon?"text-warning":a.IsWarrantyExpired?"text-danger":"")">@(a.WarrantyExpiryDate?.ToString("MMMM dd, yyyy") ?? "—")</span>
+                </div>
+                <div class="detail-row"><span class="detail-label">Cost</span><span class="detail-value">@(a.Cost > 0 ? "$"+a.Cost.ToString("N2") : "—")</span></div>
+                <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">@(string.IsNullOrEmpty(a.Location)?"—":a.Location)</span></div>
+            </div>
+        </div>
+        <div class="detail-row"><span class="detail-label">Assigned To</span>
+            <span class="detail-value">@(a.Employee != null ? $"{a.Employee.FullName} ({a.Employee.Department})" : "— Unassigned")</span>
+        </div>
+        @if (!string.IsNullOrEmpty(a.Notes)) {
+            <div class="detail-row"><span class="detail-label">Notes</span><span class="detail-value">@a.Notes</span></div>
+        }
+
+        @if (isAdmin)
+        {
+            <div class="btn-action-row">
+                @if (a.Status == "Available")
+                {
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignModal">
+                        <i class="bi bi-link-45deg me-1"></i>Assign to Employee
+                    </button>
+                }
+                @if (a.Status == "Assigned")
+                {
+                    <form method="post" asp-page-handler="Unassign" asp-route-id="@a.Id" class="d-inline"
+                          onsubmit="return confirm('Unassign this asset?')">
+                        <button class="btn btn-outline-warning"><i class="bi bi-arrow-return-left me-1"></i>Unassign</button>
+                    </form>
+                }
+                <a asp-page="./Edit" asp-route-id="@a.Id" class="btn btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header-custom">
+        <h5><i class="bi bi-clock-history me-2"></i>Assignment History</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="styled">
+            <thead><tr><th>Employee</th><th>Assigned</th><th>Returned</th><th>Notes</th></tr></thead>
+            <tbody>
+                @foreach (var h in a.AssetAssignments.OrderByDescending(x => x.AssignedDate))
+                {
+                    <tr>
+                        <td class="fw-600">@h.Employee.FullName @if(h.IsActive){<span class="badge bg-primary ms-1">Active</span>}</td>
+                        <td>@h.AssignedDate.ToString("MMM dd, yyyy")</td>
+                        <td>@(h.ReturnedDate?.ToString("MMM dd, yyyy") ?? "Active")</td>
+                        <td class="text-muted-sm">@(string.IsNullOrEmpty(h.Notes)?"—":h.Notes)</td>
+                    </tr>
+                }
+                @if (!a.AssetAssignments.Any()) { <tr><td colspan="4" class="text-center py-4 text-muted">No assignment history</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (isAdmin && a.Status == "Available")
+{
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-link-45deg me-2"></i>Assign Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="Assign" asp-route-id="@a.Id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-600">Select Employee *</label>
+                        <select name="AssignEmployeeId" class="form-select" required>
+                            <option value="">Choose employee...</option>
+                            @foreach (var emp in Model.ActiveEmployees)
+                            { <option value="@emp.Id">@emp.FullName (@emp.Department)</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-600">Notes</label>
+                        <input name="AssignNotes" class="form-control" placeholder="Optional assignment notes"/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}

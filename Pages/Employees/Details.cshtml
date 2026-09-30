@@ -1,0 +1,70 @@
+@page "{id:int}"
+@model ITAssetHelpdesk.Pages.Employees.DetailsModel
+@{
+    var e = Model.Employee;
+    ViewData["Title"] = e.FullName;
+    var isAdmin = HttpContext.Session.GetString("UserRole") == "Administrator";
+}
+
+<div class="page-header">
+    <h2><i class="bi bi-person me-2"></i>Employee Details</h2>
+    <div class="d-flex gap-2">
+        @if (isAdmin) { <a asp-page="./Edit" asp-route-id="@e.Id" class="btn btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a> }
+        <a asp-page="./Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="detail-header d-flex align-items-center gap-4">
+        <div style="width:64px;height:64px;background:#1d4ed8;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:800;flex-shrink:0;">
+            @e.FullName[0].ToString().ToUpper()
+        </div>
+        <div>
+            <h3 style="color:#f1f5f9;margin:0;font-size:22px;">@e.FullName</h3>
+            <p style="color:#94a3b8;margin:4px 0 0;font-size:14px;">@e.JobTitle &nbsp;&middot;&nbsp; @e.Department</p>
+        </div>
+        <div class="ms-auto">
+            <span class="badge-status @(e.IsActive ? "badge-active" : "badge-inactive")" style="font-size:13px;padding:5px 14px;">
+                @(e.IsActive ? "Active" : "Inactive")
+            </span>
+        </div>
+    </div>
+    <div class="p-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="detail-row"><span class="detail-label">Employee Code</span><span class="detail-value fw-600">@e.EmployeeCode</span></div>
+                <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value"><a href="mailto:@e.Email">@e.Email</a></span></div>
+                <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">@(string.IsNullOrEmpty(e.Phone) ? "—" : e.Phone)</span></div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-row"><span class="detail-label">Department</span><span class="detail-value">@e.Department</span></div>
+                <div class="detail-row"><span class="detail-label">Job Title</span><span class="detail-value">@e.JobTitle</span></div>
+                <div class="detail-row"><span class="detail-label">Date Joined</span><span class="detail-value">@e.DateJoined.ToString("MMMM dd, yyyy")</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header-custom">
+        <h5><i class="bi bi-box-seam me-2"></i>Assigned Assets (@e.Assets.Count)</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="styled">
+            <thead><tr><th>Asset Tag</th><th>Name</th><th>Category</th><th>Status</th><th>Location</th></tr></thead>
+            <tbody>
+                @foreach (var a in e.Assets)
+                {
+                    <tr>
+                        <td class="fw-600 text-primary"><a asp-page="/Assets/Details" asp-route-id="@a.Id">@a.AssetTag</a></td>
+                        <td>@a.Name</td>
+                        <td>@a.Category</td>
+                        <td><span class="badge-status badge-@a.Status.ToLower().Replace(" ","-")">@a.Status</span></td>
+                        <td>@a.Location</td>
+                    </tr>
+                }
+                @if (!e.Assets.Any()) { <tr><td colspan="5" class="text-center py-4 text-muted">No assets assigned</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,185 @@
+@page
+@model ITAssetHelpdesk.Pages.Dashboard.IndexModel
+@{ ViewData["Title"] = "Dashboard"; }
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-blue"><i class="bi bi-box-seam"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Stats.TotalAssets</div>
+            <div class="kpi-label">Total Assets</div>
+            <div class="kpi-trend text-success"><i class="bi bi-circle-fill" style="font-size:7px"></i> @Model.Stats.AssignedAssets assigned</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-green"><i class="bi bi-check-circle"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Stats.AvailableAssets</div>
+            <div class="kpi-label">Available Assets</div>
+            <div class="kpi-trend text-muted">Ready to assign</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-amber"><i class="bi bi-tools"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Stats.UnderRepairAssets</div>
+            <div class="kpi-label">Under Repair</div>
+            <div class="kpi-trend text-warning">Needs attention</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-red"><i class="bi bi-ticket-perforated"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Stats.OpenTickets</div>
+            <div class="kpi-label">Open Tickets</div>
+            <div class="kpi-trend @(Model.Stats.CriticalTickets > 0 ? "text-danger" : "text-muted")">
+                @if (Model.Stats.CriticalTickets > 0) { <span><i class="bi bi-exclamation-triangle-fill"></i> @Model.Stats.CriticalTickets critical</span> }
+                else { <span>No critical tickets</span> }
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-purple"><i class="bi bi-people"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Stats.ActiveEmployees</div>
+            <div class="kpi-label">Active Employees</div>
+            <div class="kpi-trend text-muted">of @Model.Stats.TotalEmployees total</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-green"><i class="bi bi-check2-all"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Stats.ResolvedTickets</div>
+            <div class="kpi-label">Resolved Tickets</div>
+            <div class="kpi-trend text-success">@Model.Stats.TicketsResolvedThisMonth this month</div>
+        </div>
+    </div>
+    @if (Model.Stats.WarrantyExpiringSoon > 0)
+    {
+    <div class="kpi-card" style="border-color:#fde68a;">
+        <div class="kpi-icon kpi-amber"><i class="bi bi-shield-exclamation"></i></div>
+        <div class="kpi-body">
+            <div class="kpi-value text-warning">@Model.Stats.WarrantyExpiringSoon</div>
+            <div class="kpi-label">Warranty Expiring</div>
+            <div class="kpi-trend text-warning">Within 30 days</div>
+        </div>
+    </div>
+    }
+</div>
+
+<!-- Charts + Alerts row -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-5 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Assets by Category</h5>
+            </div>
+            <div class="chart-container" style="height:280px;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-pie-chart-fill me-2 text-purple"></i>Tickets by Priority</h5>
+            </div>
+            <div class="chart-container" style="height:280px;">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-12">
+        <div class="card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-shield-exclamation me-2 text-warning"></i>Warranty Alerts</h5>
+            </div>
+            <div class="p-3">
+                @if (!Model.Stats.WarrantyAlerts.Any())
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-shield-check text-success" style="font-size:2rem;"></i>
+                        <p class="text-muted mt-2 mb-0" style="font-size:13px;">No warranties expiring soon</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var w in Model.Stats.WarrantyAlerts)
+                    {
+                        <div class="warranty-alert @(w.DaysRemaining <= 14 ? "critical" : "")">
+                            <i class="bi bi-exclamation-triangle-fill @(w.DaysRemaining <= 14 ? "text-danger" : "text-warning")"></i>
+                            <div>
+                                <div class="fw-600" style="font-size:13px;">@w.AssetTag — @w.AssetName</div>
+                                <div class="text-muted-sm">Expires @w.ExpiryDate?.ToString("MMM dd, yyyy") (@w.DaysRemaining days)</div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Asset Status + Recent Activity -->
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-donut-chart me-2 text-success"></i>Asset Status</h5>
+            </div>
+            <div class="chart-container" style="height:240px;">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-clock-history me-2 text-secondary"></i>Recent Activity</h5>
+                <a asp-page="/Tickets/Index" class="btn btn-sm btn-outline-primary">View All Tickets</a>
+            </div>
+            <div class="p-4">
+                @foreach (var a in Model.Stats.RecentActivity)
+                {
+                    <div class="activity-item">
+                        <div class="activity-icon @a.BadgeClass bg-opacity-10">
+                            <i class="bi @a.Icon @a.BadgeClass" style="font-size:14px;"></i>
+                        </div>
+                        <div>
+                            <div class="activity-desc">@a.Description</div>
+                            <div class="activity-time">@a.Timestamp.ToString("MMM dd, yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var cat  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Stats.AssetsByCategory));
+var prio = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Stats.TicketsByPriority));
+var stat = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Stats.AssetsByStatus));
+
+const palette = ["#1d4ed8","#16a34a","#d97706","#dc2626","#7c3aed","#0891b2","#be185d","#92400e"];
+
+function makeChart(id, type, data, colors, opts) {
+    var ctx = document.getElementById(id);
+    if (!ctx) return;
+    return new Chart(ctx, {
+        type: type,
+        data: {
+            labels: Object.keys(data),
+            datasets: [{ data: Object.values(data), backgroundColor: colors || palette, borderWidth: type==="doughnut"?2:0, borderColor:"#fff", borderRadius: type==="bar"?6:0 }]
+        },
+        options: Object.assign({ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display: type!=="bar", position:"bottom", labels:{ font:{size:12}, padding:12 } } } }, opts||{})
+    });
+}
+
+makeChart("categoryChart","bar",cat,palette,{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:"#f1f5f9" } }, x:{ grid:{ display:false } } } });
+makeChart("priorityChart","doughnut",prio,["#16a34a","#d97706","#ea580c","#dc2626"]);
+makeChart("statusChart","doughnut",stat,["#16a34a","#1d4ed8","#d97706","#94a3b8"]);
+</script>
+}

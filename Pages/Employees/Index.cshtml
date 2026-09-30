@@ -1,0 +1,83 @@
+@page
+@model ITAssetHelpdesk.Pages.Employees.IndexModel
+@{
+    ViewData["Title"] = "Employees";
+    var isAdmin = HttpContext.Session.GetString("UserRole") == "Administrator";
+}
+
+<div class="page-header">
+    <h2><i class="bi bi-people me-2"></i>Employees</h2>
+    @if (isAdmin) {
+        <a asp-page="./Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Employee</a>
+    }
+</div>
+
+<div class="table-card">
+    <div class="table-toolbar">
+        <form method="get" class="d-flex gap-2 flex-wrap w-100">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" name="Search" class="form-control" placeholder="Search employees..."
+                       value="@Model.Search" style="width:230px;padding-left:32px;"/>
+            </div>
+            <select name="Dept" class="form-select" style="width:160px;">
+                <option value="">All Departments</option>
+                @foreach (var d in Model.Departments)
+                {
+                    if (Model.Dept == d) { <option value="@d" selected>@d</option> }
+                    else { <option value="@d">@d</option> }
+                }
+            </select>
+            <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Dept))
+            { <a asp-page="./Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x me-1"></i>Clear</a> }
+        </form>
+        <span class="ms-auto text-muted-sm">@Model.Employees.Count result(s)</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="styled">
+            <thead>
+                <tr><th>Code</th><th>Full Name</th><th>Email</th><th>Department</th><th>Job Title</th><th>Phone</th><th>Status</th><th>Joined</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model.Employees)
+                {
+                    <tr>
+                        <td class="fw-600 text-primary">@e.EmployeeCode</td>
+                        <td class="fw-600">@e.FullName</td>
+                        <td class="text-muted-sm">@e.Email</td>
+                        <td>@e.Department</td>
+                        <td>@e.JobTitle</td>
+                        <td class="text-muted-sm">@e.Phone</td>
+                        <td>
+                            <span class="badge-status @(e.IsActive ? "badge-active" : "badge-inactive")">
+                                <i class="bi bi-circle-fill" style="font-size:7px;"></i> @(e.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td class="text-muted-sm">@e.DateJoined.ToString("MMM dd, yyyy")</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a asp-page="./Details" asp-route-id="@e.Id" class="btn btn-sm btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
+                                @if (isAdmin)
+                                {
+                                    <a asp-page="./Edit" asp-route-id="@e.Id" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@e.Id" class="d-inline"
+                                          onsubmit="return confirm('Delete employee?')">
+                                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Employees.Any())
+                {
+                    <tr><td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:8px;"></i>No employees found
+                    </td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

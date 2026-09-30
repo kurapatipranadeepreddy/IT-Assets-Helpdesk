@@ -1,0 +1,57 @@
+@page "{id:int}"
+@model ITAssetHelpdesk.Pages.Tickets.EditModel
+@{ ViewData["Title"] = "Edit Ticket"; }
+<div class="page-header">
+    <h2><i class="bi bi-pencil me-2"></i>Edit Ticket</h2>
+    <div class="d-flex gap-2">
+        <a asp-page="./Details" asp-route-id="@Model.Ticket.Id" class="btn btn-outline-secondary"><i class="bi bi-eye me-1"></i>View</a>
+        <a asp-page="./Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+<div class="form-card" style="max-width:760px;">
+    <form method="post">
+        <input type="hidden" asp-for="Ticket.Id"/>
+        <input type="hidden" asp-for="Ticket.TicketNumber"/>
+        <input type="hidden" asp-for="Ticket.CreatedById"/>
+        <input type="hidden" asp-for="Ticket.AssignedTechnicianId"/>
+        <input type="hidden" asp-for="Ticket.CreatedDate"/>
+        <input type="hidden" asp-for="Ticket.ResolvedDate"/>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label fw-600">Title *</label>
+                <input asp-for="Ticket.Title" class="form-control" required/>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-600">Priority</label>
+                <select asp-for="Ticket.Priority" class="form-select">
+                    @foreach (var p in ITAssetHelpdesk.Models.Ticket.Priorities) { <option value="@p">@p</option> }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-600">Category</label>
+                <select asp-for="Ticket.Category" class="form-select">
+                    @foreach (var c in ITAssetHelpdesk.Models.Ticket.Categories) { <option value="@c">@c</option> }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-600">Status</label>
+                <select asp-for="Ticket.Status" class="form-select">
+                    @foreach (var s in ITAssetHelpdesk.Models.Ticket.Statuses) { <option value="@s">@s</option> }
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-600">Description *</label>
+                <textarea asp-for="Ticket.Description" class="form-control" rows="5" required></textarea>
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-600">Resolution Notes</label>
+                <textarea asp-for="Ticket.ResolutionNotes" class="form-control" rows="3" placeholder="Add when resolving..."></textarea>
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+            <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

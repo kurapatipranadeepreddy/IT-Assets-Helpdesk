@@ -1,0 +1,97 @@
+@page
+@model ITAssetHelpdesk.Pages.Assets.IndexModel
+@{
+    ViewData["Title"] = "IT Assets";
+    var isAdmin = HttpContext.Session.GetString("UserRole") == "Administrator";
+}
+
+<div class="page-header">
+    <h2><i class="bi bi-box-seam me-2"></i>IT Assets</h2>
+    @if (isAdmin) { <a asp-page="./Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Asset</a> }
+</div>
+
+<div class="table-card">
+    <div class="table-toolbar">
+        <form method="get" class="d-flex gap-2 flex-wrap w-100 align-items-center">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" name="Search" class="form-control" placeholder="Tag, name, serial..."
+                       value="@Model.Search" style="width:210px;padding-left:32px;"/>
+            </div>
+            <select name="Category" class="form-select" style="width:160px;">
+                <option value="">All Categories</option>
+                @foreach (var c in ITAssetHelpdesk.Models.Asset.Categories)
+                {
+                    if (Model.Category == c) { <option value="@c" selected>@c</option> }
+                    else { <option value="@c">@c</option> }
+                }
+            </select>
+            <select name="Status" class="form-select" style="width:150px;">
+                <option value="">All Statuses</option>
+                @foreach (var s in ITAssetHelpdesk.Models.Asset.Statuses)
+                {
+                    if (Model.Status == s) { <option value="@s" selected>@s</option> }
+                    else { <option value="@s">@s</option> }
+                }
+            </select>
+            <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+            @if (!string.IsNullOrEmpty(Model.Search)||!string.IsNullOrEmpty(Model.Category)||!string.IsNullOrEmpty(Model.Status))
+            { <a asp-page="./Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x me-1"></i>Clear</a> }
+            <span class="ms-auto text-muted-sm">@Model.Assets.Count asset(s)</span>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="styled">
+            <thead>
+                <tr><th>Tag</th><th>Name</th><th>Category</th><th>Brand</th><th>Status</th><th>Assigned To</th><th>Warranty</th><th>Cost</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Assets)
+                {
+                    var warnCls = a.IsWarrantyExpiringSoon ? "text-warning" : (a.IsWarrantyExpired ? "text-danger" : "");
+                    var sc = a.Status switch { "Available"=>"badge-available","Assigned"=>"badge-assigned","Under Repair"=>"badge-repair","Retired"=>"badge-retired",_=>"" };
+                    <tr>
+                        <td><a asp-page="./Details" asp-route-id="@a.Id" class="fw-600 text-primary">@a.AssetTag</a></td>
+                        <td class="fw-600">@a.Name</td>
+                        <td>@a.Category</td>
+                        <td>@a.Brand</td>
+                        <td><span class="badge-status @sc">@a.Status</span></td>
+                        <td>@(a.Employee?.FullName ?? "—")</td>
+                        <td class="text-muted-sm @warnCls">
+                            @if (a.WarrantyExpiryDate.HasValue) {
+                                @a.WarrantyExpiryDate.Value.ToString("MMM yyyy")
+                                if (a.IsWarrantyExpiringSoon || a.IsWarrantyExpired) { <i class="bi bi-exclamation-triangle-fill ms-1"></i> }
+                            } else { <span>—</span> }
+                        </td>
+                        <td class="text-muted-sm">@(a.Cost > 0 ? "$"+a.Cost.ToString("N2") : "—")</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a asp-page="./Details" asp-route-id="@a.Id" class="btn btn-sm btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
+                                @if (isAdmin)
+                                {
+                                    <a asp-page="./Edit" asp-route-id="@a.Id" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    @if (a.Status == "Assigned")
+                                    {
+                                        <form method="post" asp-page-handler="Unassign" asp-route-id="@a.Id" class="d-inline"
+                                              onsubmit="return confirm('Unassign this asset?')">
+                                            <button class="btn btn-sm btn-outline-warning" title="Unassign"><i class="bi bi-arrow-return-left"></i></button>
+                                        </form>
+                                    }
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@a.Id" class="d-inline"
+                                          onsubmit="return confirm('Delete this asset?')">
+                                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Assets.Any())
+                { <tr><td colspan="9" class="text-center py-5 text-muted">
+                    <i class="bi bi-box-seam" style="font-size:2rem;display:block;margin-bottom:8px;"></i>No assets found
+                </td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>
